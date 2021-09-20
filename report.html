@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>Test Report</title>
+    <link href="assets/style.css" rel="stylesheet" type="text/css"/></head>
+  <body onLoad="init()">
+    <script>/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+
+function toArray(iter) {
+    if (iter === null) {
+        return null;
+    }
+    return Array.prototype.slice.call(iter);
+}
+
+function find(selector, elem) {
+    if (!elem) {
+        elem = document;
+    }
+    return elem.querySelector(selector);
+}
+
+function find_all(selector, elem) {
+    if (!elem) {
+        elem = document;
+    }
+    return toArray(elem.querySelectorAll(selector));
+}
+
+function sort_column(elem) {
+    toggle_sort_states(elem);
+    var colIndex = toArray(elem.parentNode.childNodes).indexOf(elem);
+    var key;
+    if (elem.classList.contains('numeric')) {
+        key = key_num;
+    } else if (elem.classList.contains('result')) {
+        key = key_result;
+    } else {
+        key = key_alpha;
+    }
+    sort_table(elem, key(colIndex));
+}
+
+function show_all_extras() {
+    find_all('.col-result').forEach(show_extras);
+}
+
+function hide_all_extras() {
+    find_all('.col-result').forEach(hide_extras);
+}
+
+function show_extras(colresult_elem) {
+    var extras = colresult_elem.parentNode.nextElementSibling;
+    var expandcollapse = colresult_elem.firstElementChild;
+    extras.classList.remove("collapsed");
+    expandcollapse.classList.remove("expander");
+    expandcollapse.classList.add("collapser");
+}
+
+function hide_extras(colresult_elem) {
+    var extras = colresult_elem.parentNode.nextElementSibling;
+    var expandcollapse = colresult_elem.firstElementChild;
+    extras.classList.add("collapsed");
+    expandcollapse.classList.remove("collapser");
+    expandcollapse.classList.add("expander");
+}
+
+function show_filters() {
+    var filter_items = document.getElementsByClassName('filter');
+    for (var i = 0; i < filter_items.length; i++)
+        filter_items[i].hidden = false;
+}
+
+function add_collapse() {
+    // Add links for show/hide all
+    var resulttable = find('table#results-table');
+    var showhideall = document.createElement("p");
+    showhideall.innerHTML = '<a href="javascript:show_all_extras()">Show all details</a> / ' +
+                            '<a href="javascript:hide_all_extras()">Hide all details</a>';
+    resulttable.parentElement.insertBefore(showhideall, resulttable);
+
+    // Add show/hide link to each result
+    find_all('.col-result').forEach(function(elem) {
+        var collapsed = get_query_parameter('collapsed') || 'Passed';
+        var extras = elem.parentNode.nextElementSibling;
+        var expandcollapse = document.createElement("span");
+        if (extras.classList.contains("collapsed")) {
+            expandcollapse.classList.add("expander")
+        } else if (collapsed.includes(elem.innerHTML)) {
+            extras.classList.add("collapsed");
+            expandcollapse.classList.add("expander");
+        } else {
+            expandcollapse.classList.add("collapser");
+        }
+        elem.appendChild(expandcollapse);
+
+        elem.addEventListener("click", function(event) {
+            if (event.currentTarget.parentNode.nextElementSibling.classList.contains("collapsed")) {
+                show_extras(event.currentTarget);
+            } else {
+                hide_extras(event.currentTarget);
+            }
+        });
+    })
+}
+
+function get_query_parameter(name) {
+    var match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
+    return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
+}
+
+function init () {
+    reset_sort_headers();
+
+    add_collapse();
+
+    show_filters();
+
+    sort_column(find('.initial-sort'));
+
+    find_all('.sortable').forEach(function(elem) {
+        elem.addEventListener("click",
+                              function(event) {
+                                  sort_column(elem);
+                              }, false)
+    });
+
+};
+
+function sort_table(clicked, key_func) {
+    var rows = find_all('.results-table-row');
+    var reversed = !clicked.classList.contains('asc');
+    var sorted_rows = sort(rows, key_func, reversed);
+    /* Whole table is removed here because browsers acts much slower
+     * when appending existing elements.
+     */
+    var thead = document.getElementById("results-table-head");
+    document.getElementById('results-table').remove();
+    var parent = document.createElement("table");
+    parent.id = "results-table";
+    parent.appendChild(thead);
+    sorted_rows.forEach(function(elem) {
+        parent.appendChild(elem);
+    });
+    document.getElementsByTagName("BODY")[0].appendChild(parent);
+}
+
+function sort(items, key_func, reversed) {
+    var sort_array = items.map(function(item, i) {
+        return [key_func(item), i];
+    });
+
+    sort_array.sort(function(a, b) {
+        var key_a = a[0];
+        var key_b = b[0];
+
+        if (key_a == key_b) return 0;
+
+        if (reversed) {
+            return (key_a < key_b ? 1 : -1);
+        } else {
+            return (key_a > key_b ? 1 : -1);
+        }
+    });
+
+    return sort_array.map(function(item) {
+        var index = item[1];
+        return items[index];
+    });
+}
+
+function key_alpha(col_index) {
+    return function(elem) {
+        return elem.childNodes[1].childNodes[col_index].firstChild.data.toLowerCase();
+    };
+}
+
+function key_num(col_index) {
+    return function(elem) {
+        return parseFloat(elem.childNodes[1].childNodes[col_index].firstChild.data);
+    };
+}
+
+function key_result(col_index) {
+    return function(elem) {
+        var strings = ['Error', 'Failed', 'Rerun', 'XFailed', 'XPassed',
+                       'Skipped', 'Passed'];
+        return strings.indexOf(elem.childNodes[1].childNodes[col_index].firstChild.data);
+    };
+}
+
+function reset_sort_headers() {
+    find_all('.sort-icon').forEach(function(elem) {
+        elem.parentNode.removeChild(elem);
+    });
+    find_all('.sortable').forEach(function(elem) {
+        var icon = document.createElement("div");
+        icon.className = "sort-icon";
+        icon.textContent = "vvv";
+        elem.insertBefore(icon, elem.firstChild);
+        elem.classList.remove("desc", "active");
+        elem.classList.add("asc", "inactive");
+    });
+}
+
+function toggle_sort_states(elem) {
+    //if active, toggle between asc and desc
+    if (elem.classList.contains('active')) {
+        elem.classList.toggle('asc');
+        elem.classList.toggle('desc');
+    }
+
+    //if inactive, reset all other functions and add ascending active
+    if (elem.classList.contains('inactive')) {
+        reset_sort_headers();
+        elem.classList.remove('inactive');
+        elem.classList.add('active');
+    }
+}
+
+function is_all_rows_hidden(value) {
+  return value.hidden == false;
+}
+
+function filter_table(elem) {
+    var outcome_att = "data-test-result";
+    var outcome = elem.getAttribute(outcome_att);
+    class_outcome = outcome + " results-table-row";
+    var outcome_rows = document.getElementsByClassName(class_outcome);
+
+    for(var i = 0; i < outcome_rows.length; i++){
+        outcome_rows[i].hidden = !elem.checked;
+    }
+
+    var rows = find_all('.results-table-row').filter(is_all_rows_hidden);
+    var all_rows_hidden = rows.length == 0 ? true : false;
+    var not_found_message = document.getElementById("not-found-message");
+    not_found_message.hidden = !all_rows_hidden;
+}
+</script>
+    <h1>report.html</h1>
+    <p>Report generated on 14-Jul-2021 at 16:34:02 by <a href="https://pypi.python.org/pypi/pytest-html">pytest-html</a> v2.1.1</p>
+    <h2>Environment</h2>
+    <table id="environment">
+      <tr>
+        <td>JAVA_HOME</td>
+        <td>C:\Program Files\Java\jdk-16.0.1</td></tr>
+      <tr>
+        <td>Packages</td>
+        <td>{"pluggy": "0.13.1", "py": "1.9.0", "pytest": "5.4.3"}</td></tr>
+      <tr>
+        <td>Platform</td>
+        <td>Windows-10-10.0.19041-SP0</td></tr>
+      <tr>
+        <td>Plugins</td>
+        <td>{"excel": "1.4.2", "html": "2.1.1", "metadata": "1.10.0"}</td></tr>
+      <tr>
+        <td>Python</td>
+        <td>3.8.3</td></tr></table>
+    <h2>Summary</h2>
+    <p>29 tests ran in 2084.88 seconds. </p>
+    <p class="filter" hidden="true">(Un)check the boxes to filter the results.</p><input checked="true" class="filter" data-test-result="passed" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="passed">21 passed</span>, <input checked="true" class="filter" data-test-result="skipped" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="skipped">0 skipped</span>, <input checked="true" class="filter" data-test-result="failed" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="failed">8 failed</span>, <input checked="true" class="filter" data-test-result="error" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="error">0 errors</span>, <input checked="true" class="filter" data-test-result="xfailed" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="xfailed">0 expected failures</span>, <input checked="true" class="filter" data-test-result="xpassed" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="xpassed">0 unexpected passes</span>
+    <h2>Results</h2>
+    <table id="results-table">
+      <thead id="results-table-head">
+        <tr>
+          <th class="sortable result initial-sort" col="result">Result</th>
+          <th class="sortable" col="name">Test</th>
+          <th class="sortable numeric" col="duration">Duration</th>
+          <th>Links</th></tr>
+        <tr hidden="true" id="not-found-message">
+          <th colspan="4">No results found. Try to check the filters</th></tr></thead>
+      <tbody class="failed results-table-row">
+        <tr>
+          <td class="col-result">Failed</td>
+          <td class="col-name">Tests/test_registration.py::adminloginwithwrongemail_0_https_massdtaiot_com_dtahip_::test_wrong_emailid</td>
+          <td class="col-duration">51.97</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log">self = &lt;test_registration.adminloginwithwrongemail_0_https_massdtaiot_com_dtahip_ testMethod=test_wrong_emailid&gt;<br/><br/>    @pytest.mark.ts_006<br/>    def test_wrong_emailid(self):<br/>        &quot;&quot;&quot;<br/>        1.launch url<br/>        2.Login with wrong email id<br/>    <br/>        &quot;&quot;&quot;<br/>        self.tc_id = &quot;Ts_006&quot;<br/>        self.tc_desc = &quot;Verify the admin is able to login with wrong email id&quot;<br/>        self.tc_step = &quot;TC Start&quot;<br/>    <br/>        incorrectlogin = adminloginwithwrongemailid(self.driver)<br/>    <br/>        self.tc_step = &quot;Launch the url&quot;<br/>        incorrectlogin.launchUrl(self.url)<br/>    <br/>        self.tc_step = &quot;Enter the login details&quot;<br/>        incorrectlogin.clickVendorLogin()<br/>        incorrectlogin.enterloginDetails(self.username, self.password)<br/>        incorrectlogin.clickLogin()<br/>&gt;       incorrectlogin.verifyLogin()<br/><br/>Tests\test_registration.py:257: <br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ <br/>Methods\methods.py:466: in verifyLogin<br/>    getTextVar =  self.getText(locatorsClass.successmsg)<br/>WebActions\webactions.py:29: in getText<br/>    get_Text = WebDriverWait (self.driver , 10).until(EC.visibility_of_element_located(locator))<br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ <br/><br/>self = &lt;selenium.webdriver.support.wait.WebDriverWait (session=&quot;1c4b52e9f24ab98266a913860f6ffec9&quot;)&gt;<br/>method = &lt;selenium.webdriver.support.expected_conditions.visibility_of_element_located object at 0x000001FAD0D63CA0&gt;, message = &#x27;&#x27;<br/><br/>    def until(self, method, message=&#x27;&#x27;):<br/>        &quot;&quot;&quot;Calls the method provided with the driver as an argument until the \<br/>        return value is not False.&quot;&quot;&quot;<br/>        screen = None<br/>        stacktrace = None<br/>    <br/>        end_time = time.time() + self._timeout<br/>        while True:<br/>            try:<br/>                value = method(self._driver)<br/>                if value:<br/>                    return value<br/>            except self._ignored_exceptions as exc:<br/>                screen = getattr(exc, &#x27;screen&#x27;, None)<br/>                stacktrace = getattr(exc, &#x27;stacktrace&#x27;, None)<br/>            time.sleep(self._poll)<br/>            if time.time() &gt; end_time:<br/>                break<br/>&gt;       raise TimeoutException(message, screen, stacktrace)<br/><span class="error">E       selenium.common.exceptions.TimeoutException: Message:</span><br/><br/>C:\ProgramData\Anaconda3\lib\site-packages\selenium\webdriver\support\wait.py:80: TimeoutException<br/></div></td></tr></tbody>
+      <tbody class="failed results-table-row">
+        <tr>
+          <td class="col-result">Failed</td>
+          <td class="col-name">Tests/test_registration.py::adminloginwithoutatSym_0_https_massdtaiot_com_dtahip_::test_without_charecter</td>
+          <td class="col-duration">41.98</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log">self = &lt;test_registration.adminloginwithoutatSym_0_https_massdtaiot_com_dtahip_ testMethod=test_without_charecter&gt;<br/><br/>    @pytest.mark.ts_007<br/>    def test_without_charecter(self):<br/>        &quot;&quot;&quot;<br/>        1.launch url<br/>        2.Login without @ Symbol<br/>    <br/>        &quot;&quot;&quot;<br/>        self.tc_id = &quot;Ts_007&quot;<br/>        self.tc_desc = &quot;Verify the admin is able to login with wrong email id&quot;<br/>        self.tc_step = &quot;TC Start&quot;<br/>    <br/>        withoutcharacter = adminloginwithoutatSymbol(self.driver)<br/>    <br/>        self.tc_step = &quot;Launch the url&quot;<br/>        withoutcharacter.launchUrl(self.url)<br/>    <br/>        self.tc_step = &quot;Enter the login details&quot;<br/>        withoutcharacter.clickVendorLogin()<br/>        withoutcharacter.enterloginDetails(self.username, self.password)<br/>        withoutcharacter.clickLogin()<br/>&gt;       self.assertEqual(withoutcharacter.verifyLogin(), &quot; DTA HIP Admin &quot;, &quot;Login Failed&quot;)<br/><br/>Tests\test_registration.py:284: <br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ <br/>Methods\methods.py:567: in verifyLogin<br/>    getTextVar = self.getText(locatorsClass.successmsg)<br/>WebActions\webactions.py:29: in getText<br/>    get_Text = WebDriverWait (self.driver , 10).until(EC.visibility_of_element_located(locator))<br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ <br/><br/>self = &lt;selenium.webdriver.support.wait.WebDriverWait (session=&quot;3f61e7f3cd20035d59c50a1f75b385eb&quot;)&gt;<br/>method = &lt;selenium.webdriver.support.expected_conditions.visibility_of_element_located object at 0x000001FACE22B7F0&gt;, message = &#x27;&#x27;<br/><br/>    def until(self, method, message=&#x27;&#x27;):<br/>        &quot;&quot;&quot;Calls the method provided with the driver as an argument until the \<br/>        return value is not False.&quot;&quot;&quot;<br/>        screen = None<br/>        stacktrace = None<br/>    <br/>        end_time = time.time() + self._timeout<br/>        while True:<br/>            try:<br/>                value = method(self._driver)<br/>                if value:<br/>                    return value<br/>            except self._ignored_exceptions as exc:<br/>                screen = getattr(exc, &#x27;screen&#x27;, None)<br/>                stacktrace = getattr(exc, &#x27;stacktrace&#x27;, None)<br/>            time.sleep(self._poll)<br/>            if time.time() &gt; end_time:<br/>                break<br/>&gt;       raise TimeoutException(message, screen, stacktrace)<br/><span class="error">E       selenium.common.exceptions.TimeoutException: Message:</span><br/><br/>C:\ProgramData\Anaconda3\lib\site-packages\selenium\webdriver\support\wait.py:80: TimeoutException<br/></div></td></tr></tbody>
+      <tbody class="failed results-table-row">
+        <tr>
+          <td class="col-result">Failed</td>
+          <td class="col-name">Tests/test_registration.py::adminloginwithoutreqdfield_0_https_massdtaiot_com_dtahip_::test_without_rqdfield</td>
+          <td class="col-duration">47.48</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log">self = &lt;test_registration.adminloginwithoutreqdfield_0_https_massdtaiot_com_dtahip_ testMethod=test_without_rqdfield&gt;<br/><br/>    @pytest.mark.ts_008<br/>    def test_without_rqdfield(self):<br/>        &quot;&quot;&quot;<br/>        1.launch url<br/>        2.Login without required field<br/>    <br/>        &quot;&quot;&quot;<br/>        self.tc_id = &quot;Ts_007&quot;<br/>        self.tc_desc = &quot;Verify the admin is able to login without required field&quot;<br/>        self.tc_step = &quot;TC Start&quot;<br/>    <br/>        withoutcharacter = adminloginwithoutrqdfield(self.driver)<br/>    <br/>        self.tc_step = &quot;Launch the url&quot;<br/>        withoutcharacter.launchUrl(self.url)<br/>    <br/>        self.tc_step = &quot;Enter the login details&quot;<br/>        withoutcharacter.clickVendorLogin()<br/>        withoutcharacter.enterloginDetails(self.password)<br/>        withoutcharacter.clickLogin()<br/>&gt;       self.assertEqual(withoutcharacter.verifyLogin(), &quot; DTA HIP Admin &quot;, &quot;Login Failed&quot;)<br/><br/>Tests\test_registration.py:309: <br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ <br/>Methods\methods.py:588: in verifyLogin<br/>    getTextVar = self.getText(locatorsClass.successmsg)<br/>WebActions\webactions.py:29: in getText<br/>    get_Text = WebDriverWait (self.driver , 10).until(EC.visibility_of_element_located(locator))<br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ <br/><br/>self = &lt;selenium.webdriver.support.wait.WebDriverWait (session=&quot;a47a9af31fefb96ca43dd1d9898a28bd&quot;)&gt;<br/>method = &lt;selenium.webdriver.support.expected_conditions.visibility_of_element_located object at 0x000001FAD0E821F0&gt;, message = &#x27;&#x27;<br/><br/>    def until(self, method, message=&#x27;&#x27;):<br/>        &quot;&quot;&quot;Calls the method provided with the driver as an argument until the \<br/>        return value is not False.&quot;&quot;&quot;<br/>        screen = None<br/>        stacktrace = None<br/>    <br/>        end_time = time.time() + self._timeout<br/>        while True:<br/>            try:<br/>                value = method(self._driver)<br/>                if value:<br/>                    return value<br/>            except self._ignored_exceptions as exc:<br/>                screen = getattr(exc, &#x27;screen&#x27;, None)<br/>                stacktrace = getattr(exc, &#x27;stacktrace&#x27;, None)<br/>            time.sleep(self._poll)<br/>            if time.time() &gt; end_time:<br/>                break<br/>&gt;       raise TimeoutException(message, screen, stacktrace)<br/><span class="error">E       selenium.common.exceptions.TimeoutException: Message:</span><br/><br/>C:\ProgramData\Anaconda3\lib\site-packages\selenium\webdriver\support\wait.py:80: TimeoutException<br/></div></td></tr></tbody>
+      <tbody class="failed results-table-row">
+        <tr>
+          <td class="col-result">Failed</td>
+          <td class="col-name">Tests/test_registration.py::adminloginVerifyVendorwithoutcity_0_https_massdtaiot_com_dtahip_::test_verifywithout_city</td>
+          <td class="col-duration">58.32</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log">self = &lt;test_registration.adminloginVerifyVendorwithoutcity_0_https_massdtaiot_com_dtahip_ testMethod=test_verifywithout_city&gt;<br/><br/>    @pytest.mark.ts_010<br/>    def test_verifywithout_city(self):<br/>        &quot;&quot;&quot;<br/>        1.launch url<br/>        2.enter registration details<br/>        3.Copy the details<br/>        &quot;&quot;&quot;<br/>        self.tc_id = &quot;Ts_010&quot;<br/>        self.tc_desc = &quot;Verify the admin is able to login and verify the vendor&quot;<br/>        self.tc_step = &quot;TC Start&quot;<br/>    <br/>        registration = adminLoginVerifywithoutcity(self.driver)<br/>    <br/>        self.tc_step = &quot;Launch the url&quot;<br/>        registration.launchUrl(self.url)<br/>    <br/>        self.tc_step = &quot;Enter the login details&quot;<br/>        registration.clickVendorLogin()<br/>        registration.clickRegisterButton()<br/>        registration.enterBasicRegistrationDetails(self.firstname, self.lastname, self.vendorname, self.fnsnumber,<br/>                                                   self.primaryemail, self.primaryphno, self.psw, self.cpsw,<br/>                                                   self.continfo)<br/>        registration.basicRegButton()<br/>        self.tc_step = &quot;Enter the public registration details&quot;<br/>&gt;       registration.enterPublicRegistrationDetails(self.publicemail, self.publicphno, self.publicwebsite,<br/>                                                    self.businessdesc, self.products)<br/><span class="error">E       AttributeError: &#x27;adminloginVerifyVendorwithoutcity_0_https_massdtai&#x27; object has no attribute &#x27;publicemail&#x27;</span><br/><br/>Tests\test_registration.py:365: AttributeError<br/></div></td></tr></tbody>
+      <tbody class="failed results-table-row">
+        <tr>
+          <td class="col-result">Failed</td>
+          <td class="col-name">Tests/test_registration.py::vendorLocEditFeature_0_https_massdtaiot_com_dtahip_::test_LocEditFeature</td>
+          <td class="col-duration">106.59</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log">self = &lt;test_registration.vendorLocEditFeature_0_https_massdtaiot_com_dtahip_ testMethod=test_LocEditFeature&gt;<br/><br/>    @pytest.mark.ts_027<br/>    def test_LocEditFeature(self):<br/>        &quot;&quot;&quot;<br/>        1.launch url<br/>        2.Login as admin<br/>    <br/>        3.Go to vendor and edit and update vendors<br/>        &quot;&quot;&quot;<br/>        self.tc_id = &quot;027&quot;<br/>        self.tc_desc = &quot;Verify the admin is able to edit and update delete the vendor&quot;<br/>        self.tc_step = &quot;TC Start&quot;<br/>    <br/>        vendoredit = vendoreditFeatures(self.driver)<br/>    <br/>        self.tc_step = &quot;Launch the url&quot;<br/>        vendoredit.launchUrl(self.url)<br/>    <br/>        self.tc_step = &quot;Enter the login details&quot;<br/>        vendoredit.clickVendorLogin()<br/>        vendoredit.enterloginDetails(self.username, self.password)<br/>        vendoredit.clickLogin()<br/>        vendoredit.clickvendorTab()<br/>        vendoredit.entervendornameSearch(self.entervendornameSearch)<br/>        vendoredit.clickVendor()<br/>        vendoredit.clickeditvendor()<br/>        vendoredit.entereditvendor(self.editFirstName,self.editLastName)<br/>        vendoredit.updatevendor()<br/>        vendoredit.clickvendorTab()<br/>        vendoredit.entervendornameSearch(self.entervendornameSearch)<br/>        vendoredit.clickVendor()<br/>&gt;       vendoredit.clickLoc()<br/><br/>Tests\test_registration.py:866: <br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ <br/>Methods\methods.py:970: in clickLoc<br/>    self.click(locatorsClass.clickLoc)<br/>WebActions\webactions.py:19: in click<br/>    WebDriverWait (self.driver , 10).until(EC.element_to_be_clickable(locator)).click()<br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ <br/><br/>self = &lt;selenium.webdriver.support.wait.WebDriverWait (session=&quot;8185be6ce0f1392d537d82b0cedacd50&quot;)&gt;<br/>method = &lt;selenium.webdriver.support.expected_conditions.element_to_be_clickable object at 0x000001FAD105E790&gt;, message = &#x27;&#x27;<br/><br/>    def until(self, method, message=&#x27;&#x27;):<br/>        &quot;&quot;&quot;Calls the method provided with the driver as an argument until the \<br/>        return value is not False.&quot;&quot;&quot;<br/>        screen = None<br/>        stacktrace = None<br/>    <br/>        end_time = time.time() + self._timeout<br/>        while True:<br/>            try:<br/>                value = method(self._driver)<br/>                if value:<br/>                    return value<br/>            except self._ignored_exceptions as exc:<br/>                screen = getattr(exc, &#x27;screen&#x27;, None)<br/>                stacktrace = getattr(exc, &#x27;stacktrace&#x27;, None)<br/>            time.sleep(self._poll)<br/>            if time.time() &gt; end_time:<br/>                break<br/>&gt;       raise TimeoutException(message, screen, stacktrace)<br/><span class="error">E       selenium.common.exceptions.TimeoutException: Message:</span><br/><br/>C:\ProgramData\Anaconda3\lib\site-packages\selenium\webdriver\support\wait.py:80: TimeoutException<br/></div></td></tr></tbody>
+      <tbody class="failed results-table-row">
+        <tr>
+          <td class="col-result">Failed</td>
+          <td class="col-name">Tests/test_registration.py::FarmerMarketRegistrationClass_0_https_massdtaiot_com_dtahip_::test_farmers_market</td>
+          <td class="col-duration">57.21</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log">self = &lt;test_registration.FarmerMarketRegistrationClass_0_https_massdtaiot_com_dtahip_ testMethod=test_farmers_market&gt;<br/><br/>    @pytest.mark.ts_028<br/>    def test_farmers_market(self):<br/>        &quot;&quot;&quot;<br/>        1.launch url<br/>        2.enter registration details<br/>        3.verify login credential<br/>        &quot;&quot;&quot;<br/>        self.tc_id = &quot;Ts_028&quot;<br/>        self.tc_desc = &quot;Verify market manager is able to register into the application&quot;<br/>        self.tc_step = &quot;TC Start&quot;<br/>    <br/>        registration = RegistrationPage(self.driver)<br/>    <br/>        self.tc_step = &quot;Launch the url&quot;<br/>        registration.launchUrl(self.url)<br/>    <br/>        self.tc_step = &quot;Enter the basic registration details&quot;<br/>        registration.clickVendorLogin()<br/>        registration.clickRegisterButton()<br/>        registration.enterBasicRegistrationDetails(self.firstname,self.lastname,self.vendorname,self.fnsnumber,self.primaryemail,self.primaryphno,self.psw,self.cpsw,self.continfo)<br/>        registration.basicRegButton()<br/>        self.tc_step = &quot;Enter the public registration details&quot;<br/>&gt;       registration.enterPublicRegistrationDetails(self.publicemail,self.publicphno,self.publicwebsite,self.businessdesc,self.products)<br/><br/>Tests\test_registration.py:895: <br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ <br/>Methods\methods.py:46: in enterPublicRegistrationDetails<br/>    self.type(locatorsClass.publicemailaddress_textbox_id,publicemail)<br/>WebActions\webactions.py:16: in type<br/>    WebDriverWait (self.driver , 10).until(EC.visibility_of_element_located(locator)).send_keys(text)<br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ <br/><br/>self = &lt;selenium.webdriver.support.wait.WebDriverWait (session=&quot;a7d1705fbde1bf0be209d17eb1f6fb82&quot;)&gt;<br/>method = &lt;selenium.webdriver.support.expected_conditions.visibility_of_element_located object at 0x000001FAD105E550&gt;, message = &#x27;&#x27;<br/><br/>    def until(self, method, message=&#x27;&#x27;):<br/>        &quot;&quot;&quot;Calls the method provided with the driver as an argument until the \<br/>        return value is not False.&quot;&quot;&quot;<br/>        screen = None<br/>        stacktrace = None<br/>    <br/>        end_time = time.time() + self._timeout<br/>        while True:<br/>            try:<br/>                value = method(self._driver)<br/>                if value:<br/>                    return value<br/>            except self._ignored_exceptions as exc:<br/>                screen = getattr(exc, &#x27;screen&#x27;, None)<br/>                stacktrace = getattr(exc, &#x27;stacktrace&#x27;, None)<br/>            time.sleep(self._poll)<br/>            if time.time() &gt; end_time:<br/>                break<br/>&gt;       raise TimeoutException(message, screen, stacktrace)<br/><span class="error">E       selenium.common.exceptions.TimeoutException: Message:</span><br/><br/>C:\ProgramData\Anaconda3\lib\site-packages\selenium\webdriver\support\wait.py:80: TimeoutException<br/></div></td></tr></tbody>
+      <tbody class="failed results-table-row">
+        <tr>
+          <td class="col-result">Failed</td>
+          <td class="col-name">Tests/test_registration.py::searchbyVendor::test_search_vendor</td>
+          <td class="col-duration">52.62</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log">self = &lt;test_registration.searchbyVendor testMethod=test_search_vendor&gt;<br/><br/>    @pytest.mark.ts_025<br/>    <br/>    def test_search_vendor(self):<br/>        &quot;&quot;&quot;<br/>        1.launch url<br/>        2.search by city<br/>        &quot;&quot;&quot;<br/>        self.tc_id = &quot;Ts_025&quot;<br/>        self.tc_desc = &quot;Verify user is able to register into the application with existing email id&quot;<br/>        self.tc_step = &quot;TC Start&quot;<br/>    <br/>        searchbyVendor = SearchCity(self.driver)<br/>    <br/>        self.tc_step = &quot;Launch the url&quot;<br/>        searchbyVendor.launchUrl(&quot;https://massdtaiot.com/dtahip/&quot;)<br/>    <br/>        self.tc_step =&quot;Search the vendor&quot;<br/>        searchbyVendor.chooseActon()<br/>&gt;       searchbyVendor.chooseVendor()<br/><br/>Tests\test_registration.py:808: <br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ <br/>Methods\methods.py:645: in chooseVendor<br/>    self.choose(locatorsClass.searchvendor, &quot;Nancy Nickita Farms&quot;)<br/>WebActions\webactions.py:23: in choose<br/>    element.select_by_visible_text(text)<br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ <br/><br/>self = &lt;selenium.webdriver.support.select.Select object at 0x000001FAD0E7F2E0&gt;, text = &#x27;Nancy Nickita Farms&#x27;<br/><br/>    def select_by_visible_text(self, text):<br/>        &quot;&quot;&quot;Select all options that display text matching the argument. That is, when given &quot;Bar&quot; this<br/>           would select an option like:<br/>    <br/>            &lt;option value=&quot;foo&quot;&gt;Bar&lt;/option&gt;<br/>    <br/>           :Args:<br/>            - text - The visible text to match against<br/>    <br/>            throws NoSuchElementException If there is no option with specisied text in SELECT<br/>           &quot;&quot;&quot;<br/>        xpath = &quot;.//option[normalize-space(.) = %s]&quot; % self._escapeString(text)<br/>        opts = self._el.find_elements(By.XPATH, xpath)<br/>        matched = False<br/>        for opt in opts:<br/>            self._setSelected(opt)<br/>            if not self.is_multiple:<br/>                return<br/>            matched = True<br/>    <br/>        if len(opts) == 0 and &quot; &quot; in text:<br/>            subStringWithoutSpace = self._get_longest_token(text)<br/>            if subStringWithoutSpace == &quot;&quot;:<br/>                candidates = self.options<br/>            else:<br/>                xpath = &quot;.//option[contains(.,%s)]&quot; % self._escapeString(subStringWithoutSpace)<br/>                candidates = self._el.find_elements(By.XPATH, xpath)<br/>            for candidate in candidates:<br/>                if text == candidate.text:<br/>                    self._setSelected(candidate)<br/>                    if not self.is_multiple:<br/>                        return<br/>                    matched = True<br/>    <br/>        if not matched:<br/>&gt;           raise NoSuchElementException(&quot;Could not locate element with visible text: %s&quot; % text)<br/><span class="error">E           selenium.common.exceptions.NoSuchElementException: Message: Could not locate element with visible text: Nancy Nickita Farms</span><br/><br/>C:\ProgramData\Anaconda3\lib\site-packages\selenium\webdriver\support\select.py:140: NoSuchElementException<br/></div></td></tr></tbody>
+      <tbody class="failed results-table-row">
+        <tr>
+          <td class="col-result">Failed</td>
+          <td class="col-name">Tests/test_registration.py::exportandSort::test_map_export</td>
+          <td class="col-duration">52.21</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log">self = &lt;test_registration.exportandSort testMethod=test_map_export&gt;<br/><br/>    @pytest.mark.ts_026<br/>    <br/>    def test_map_export(self):<br/>        &quot;&quot;&quot;<br/>        1.launch url<br/>        2.search by city<br/>        &quot;&quot;&quot;<br/>        self.tc_id = &quot;Ts_026&quot;<br/>        self.tc_desc = &quot;Verify user is able to register into the application with existing email id&quot;<br/>        self.tc_step = &quot;TC Start&quot;<br/>    <br/>        searchbyVendor = SearchCity(self.driver)<br/>    <br/>        self.tc_step = &quot;Launch the url&quot;<br/>        searchbyVendor.launchUrl(&quot;https://massdtaiot.com/dtahip/&quot;)<br/>    <br/>        self.tc_step =&quot;Search the vendor&quot;<br/>        searchbyVendor.chooseActon()<br/>&gt;       searchbyVendor.clickmapexport()<br/><br/>Tests\test_registration.py:830: <br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ <br/>Methods\methods.py:654: in clickmapexport<br/>    self.click(locatorsClass.clickmapexport)<br/>WebActions\webactions.py:19: in click<br/>    WebDriverWait (self.driver , 10).until(EC.element_to_be_clickable(locator)).click()<br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ <br/><br/>self = &lt;selenium.webdriver.support.wait.WebDriverWait (session=&quot;530a577917d6dd29e784c1fb46691629&quot;)&gt;<br/>method = &lt;selenium.webdriver.support.expected_conditions.element_to_be_clickable object at 0x000001FAD117C8B0&gt;, message = &#x27;&#x27;<br/><br/>    def until(self, method, message=&#x27;&#x27;):<br/>        &quot;&quot;&quot;Calls the method provided with the driver as an argument until the \<br/>        return value is not False.&quot;&quot;&quot;<br/>        screen = None<br/>        stacktrace = None<br/>    <br/>        end_time = time.time() + self._timeout<br/>        while True:<br/>            try:<br/>                value = method(self._driver)<br/>                if value:<br/>                    return value<br/>            except self._ignored_exceptions as exc:<br/>                screen = getattr(exc, &#x27;screen&#x27;, None)<br/>                stacktrace = getattr(exc, &#x27;stacktrace&#x27;, None)<br/>            time.sleep(self._poll)<br/>            if time.time() &gt; end_time:<br/>                break<br/>&gt;       raise TimeoutException(message, screen, stacktrace)<br/><span class="error">E       selenium.common.exceptions.TimeoutException: Message:</span><br/><br/>C:\ProgramData\Anaconda3\lib\site-packages\selenium\webdriver\support\wait.py:80: TimeoutException<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">Tests/test_registration.py::RegistrationClass_0_https_massdtaiot_com_dtahip_::test_valid_credentials</td>
+          <td class="col-duration">187.98</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">Tests/test_registration.py::copyRegistrationDetails_0_https_massdtaiot_com_dtahip_::test_copy_details</td>
+          <td class="col-duration">105.63</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">Tests/test_registration.py::adminloginVerifyVendor_0_https_massdtaiot_com_dtahip_::test_verifyvendordetails</td>
+          <td class="col-duration">92.57</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">Tests/test_registration.py::adminloginManageUser_0_https_massdtaiot_com_dtahip_::test_user_details</td>
+          <td class="col-duration">87.47</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">Tests/test_registration.py::adminloginManageFarmerMarkets_0_https_massdtaiot_com_dtahip_::test_farmer_market_details</td>
+          <td class="col-duration">96.16</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">Tests/test_registration.py::Registrationwithoutemail_0_https_massdtaiot_com_dtahip_::test_valid_credentials</td>
+          <td class="col-duration">62.39</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">Tests/test_registration.py::commentFeature_0_https_massdtaiot_com_dtahip_::test_add_comment</td>
+          <td class="col-duration">101.65</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">Tests/test_registration.py::vendorEditFeature_0_https_massdtaiot_com_dtahip_::test_editVendor</td>
+          <td class="col-duration">130.41</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">Tests/test_registration.py::vendoractiveInactivelist_0_https_massdtaiot_com_dtahip_::test_vendorStatus</td>
+          <td class="col-duration">68.78</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">Tests/test_registration.py::vendorexportcheck_0_https_massdtaiot_com_dtahip_::test_editVendor</td>
+          <td class="col-duration">91.64</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">Tests/test_registration.py::wholeSearch_0_https_massdtaiot_com_dtahip_::test_adminwholeSearchFunction</td>
+          <td class="col-duration">173.86</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">Tests/test_registration.py::loginviaregisteredvendor_0_https_massdtaiot_com_dtahip_::test_without_charecter</td>
+          <td class="col-duration">31.78</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">Tests/test_registration.py::languageCheck_0_h::test_language</td>
+          <td class="col-duration">60.05</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">Tests/test_registration.py::wholeauditLogs_0_https_massdtaiot_com_dtahip_::test_adminauditFunction</td>
+          <td class="col-duration">84.44</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">Tests/test_registration.py::searchbycity::test_search_city</td>
+          <td class="col-duration">38.89</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">Tests/test_registration.py::clearSearch::test_click_clearsearch</td>
+          <td class="col-duration">20.08</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">Tests/test_registration.py::clickLocationtypes::test_click_Locationtypes</td>
+          <td class="col-duration">65.13</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">Tests/test_registration.py::clickorderOptions::test_click_orderoptions</td>
+          <td class="col-duration">31.23</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">Tests/test_registration.py::clickMonthOptionss::test_click_MonthOptions</td>
+          <td class="col-duration">26.89</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">Tests/test_registration.py::clickDaysOperations::test_click_daysOptions</td>
+          <td class="col-duration">27.19</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">Tests/test_registration.py::clickOpenTodays::test_click_OpenToday</td>
+          <td class="col-duration">25.67</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody></table></body></html>

@@ -1,0 +1,115 @@
+1597906228222	geckodriver	INFO	Listening on 127.0.0.1:55402
+1597906232479	mozrunner::runner	INFO	Running command: "C:\\Program Files\\Mozilla Firefox\\firefox.exe" "--marionette" "-foreground" "-no-remote" "-profile" "C:\\Users\\user\\AppData\\Local\\Temp\\rust_mozprofile7B6rYq"
+console.error: SearchCache: "_readCacheFile: Error reading cache file:" (new Error("", "(unknown module)"))
+JavaScript error: resource://gre/modules/XULStore.jsm, line 66: Error: Can't find profile directory.
+1597906256810	Marionette	INFO	Listening on port 55417
+1597906257365	Marionette	WARN	TLS certificate errors will be ignored for this session
+1597906271526	Marionette	WARN	TimedPromise timed out after 500 ms: stacktrace:
+TimedPromise/<@chrome://marionette/content/sync.js:245:13
+TimedPromise@chrome://marionette/content/sync.js:230:10
+interaction.flushEventLoop@chrome://marionette/content/interaction.js:416:10
+webdriverClickElement@chrome://marionette/content/interaction.js:182:31
+JavaScript error: https://suit.anyware.global/js/utils.js, line 89: ReferenceError: pageInit is not defined
+JavaScript error: https://suit.anyware.global/assets/bundles/libscripts.bundle.js, line 3: InvalidStateError: An attempt was made to use an object that is not, or is no longer, usable
+
+###!!! [Child][RunMessage] Error: Channel closing: too late to send/recv, messages will be lost
+
+ing command: "C:\\Program Files\\Mozilla Firefox\\firefox.exe" "--marionette" "-foreground" "-no-remote" "-profile" "C:\\Users\\user\\AppData\\Local\\Temp\\rust_mozprofileRDCziu"
+JavaScript error: resource://gre/modules/XULStore.jsm, line 66: Error: Can't find profile directory.
+console.error: SearchCache: "_readCacheFile: Error reading cache file:" (new Error("", "(unknown module)"))
+1597906541234	Marionette	INFO	Listening on port 55833
+1597906541696	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript error: https://suit.anyware.global/js/utils.js, line 89: ReferenceError: pageInit is not defined
+JavaScript error: https://suit.anyware.global/vms/js/layout.js, line 364: TypeError: brandimg[0] is undefined
+JavaScript error: https://suit.anyware.global/vms/js/schedule-visitors.js, line 3003: ReferenceError: response is not defined
+JavaScript error: https://suit.anyware.global/vms/js/schedule-visitors.js, line 3003: ReferenceError: response is not defined
+JavaScript error: https://suit.anyware.global/vms/js/schedule-visitors.js, line 3003: ReferenceError: response is not defined
+JavaScript error: https://suit.anyware.global/vms/js/schedule-visitors.js, line 3003: ReferenceError: response is not defined
+JavaScript error: https://suit.anyware.global/vms/js/schedule-visitors.js, line 3003: ReferenceError: response is not defined
+
+###!!! [Parent][MessageChannel] Error: (msgtype=0x39006E,name=PContent::Msg_SuspendInputEventQueue) Channel error: cannot send/recv
+
+
+###!!! [Parent][MessageChannel] Error: (msgtype=0x39006C,name=PContent::Msg_FlushInputEventQueue) Channel error: cannot send/recv
+
+
+###!!! [Parent][MessageChannel] Error: (msgtype=0x39006D,name=PContent::Msg_ResumeInputEventQueue) Channel error: cannot send/recv
+
+
+###!!! [Parent][MessageChannel] Error: (msgtype=0x390051,name=PContent::Msg_Shutdown) Channel error: cannot send/recv
+
+A content process crashed and MOZ_CRASHREPORTER_SHUTDOWN is set, shutting down
+
+###!!! [Child][MessageChannel] Error: (msgtype=0xB50002,name=PWebSocket::Msg_Close) Closed channel: cannot send/recv
+
+
+###!!! [Child][MessageChannel] Error: (msgtype=0xB50002,name=PWebSocket::Msg_Close) Closed channel: cannot send/recv
+
+
+###!!! [Child][MessageChannel] Error: (msgtype=0xB50002,name=PWebSocket::Msg_Close) Closed channel: cannot send/recv
+
+
+###!!! [Child][MessageChannel] Error: (msgtype=0xB50002,name=PWebSocket::Msg_Close) Closed channel: cannot send/recv
+
+
+###!!! [Child][MessageChannel] Error: (msgtype=0xB50002,name=PWebSocket::Msg_Close) Closed channel: cannot send/recv
+
+
+###!!! [Child][MessageChannel] Error: (msgtype=0xB50002,name=PWebSocket::Msg_Close) Closed channel: cannot send/recv
+
+
+###!!! [Child][MessageChannel] Error: (msgtype=0xB50002,name=PWebSocket::Msg_Close) Closed channel: cannot send/recv
+
+
+###!!! [Child][MessageChannel] Error: (msgtype=0xB50002,name=PWebSocket::Msg_Close) Closed channel: cannot send/recv
+
+
+###!!! [Child][MessageChannel] Error: (msgtype=0xB50002,name=PWebSocket::Msg_Close) Closed channel: cannot send/recv
+
+
+###!!! [Child][MessageChannel] Error: (msgtype=0xB50002,name=PWebSocket::Msg_Close) Closed channel: cannot send/recv
+
+
+###!!! [Child][MessageChannel] Error: (msgtype=0xB50002,name=PWebSocket::Msg_Close) Closed channel: cannot send/recv
+
+
+###!!! [Child][MessageChannel] Error: (msgtype=0xB50002,name=PWebSocket::Msg_Close) Closed channel: cannot send/recv
+
+
+###!!! [Child][MessageChannel] Error: (msgtype=0xB50002,name=PWebSocket::Msg_Close) Closed channel: cannot send/recv
+
+
+###!!! [Child][MessageChannel] Error: (msgtype=0xB50002,name=PWebSocket::Msg_Close) Closed channel: cannot send/recv
+
+
+###!!! [Child][MessageChannel] Error: (msgtype=0xB50002,name=PWebSocket::Msg_Close) Closed channel: cannot send/recv
+
+
+###!!! [Child][MessageChannel] Error: (msgtype=0xB50002,name=PWebSocket::Msg_Close) Closed channel: cannot send/recv
+
+
+###!!! [Child][MessageChannel] Error: (msgtype=0xB50002,name=PWebSocket::Msg_Close) Closed channel: cannot send/recv
+
+
+###!!! [Child][MessageChannel] Error: (msgtype=0xB50002,name=PWebSocket::Msg_Close) Closed channel: cannot send/recv
+
+
+###!!! [Child][MessageChannel] Error: (msgtype=0xB50002,name=PWebSocket::Msg_Close) Closed channel: cannot send/recv
+
+
+###!!! [Child][MessageChannel] Error: (msgtype=0xB50002,name=PWebSocket::Msg_Close) Closed channel: cannot send/recv
+
+
+###!!! [Child][MessageChannel] Error: (msgtype=0x390136,name=PContent::Msg_DiscardBrowsingContext) Closed channel: cannot send/recv
+
+
+###!!! [Child][MessageChannel] Error: (msgtype=0x390136,name=PContent::Msg_DiscardBrowsingContext) Closed channel: cannot send/recv
+
+
+###!!! [Child][MessageChannel] Error: (msgtype=0x390136,name=PContent::Msg_DiscardBrowsingContext) Closed channel: cannot send/recv
+
+
+###!!! [Child][MessageChannel] Error: (msgtype=0x390136,name=PContent::Msg_DiscardBrowsingContext) Closed channel: cannot send/recv
+
+[Parent 20588, Gecko_IOThread] WARNING: file /builds/worker/checkouts/gecko/ipc/chromium/src/base/process_util_win.cc, line 166
+complete. Conditions: [{"name":"TelemetryController: shutting down","state":{"initialized":true,"initStarted":true,"haveDelayedInitTask":false,"shutdownBarrier":"Not started","connectionsBarrier":"Not started","sendModule":{"sendingEnabled":false,"pendingPingRequestCount":0,"pendingPingActivityCount":0,"unpersistedPingCount":0,"persistedPingCount":0,"schedulerState":{"shutdown":true,"hasSendTask":false,"sendsFailed":false,"sendTaskState":"bail out - no pings to send","backoffDelay":60000}},"haveDelayedNewProfileTask":false},"filename":"resource://gre/modules/TelemetryControllerParent.jsm","lineNumber":850,"stack":["resource://gre/modules/TelemetryControllerParent.jsm:setupTelemetry:850","resource://gre/modules/TelemetryControllerParent.jsm:observe:960","resource://gre/modules/TelemetryControllerParent.jsm:observe:154","resource://gre/modules/TelemetryStartup.jsm:TelemetryStartup.prototype.observe:31"]}] Barrier: profile-before-change-telemetry
